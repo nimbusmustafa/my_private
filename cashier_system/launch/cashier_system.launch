@@ -1,0 +1,5 @@
+<launch>
+    <node pkg="cashier_system" type="publisher.py" name="publisher" output="screen" />
+    <node pkg="cashier_system" type="subscriber.py" name="subscriber" output="screen" />
+    <node pkg="cashier_system" type="printer.py" name="printer" output="screen" />
+</launch>
