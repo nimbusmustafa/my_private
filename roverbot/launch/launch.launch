@@ -1,0 +1,4 @@
+<launch>
+  <node pkg="roverbot" type="global_planner" name="global_planner" output="screen"> launch-prefix="gnome-terminal --command" ></node>
+  
+</launch>
