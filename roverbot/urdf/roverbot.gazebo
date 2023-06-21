@@ -72,15 +72,15 @@
   <gazebo reference="hokuyo">
     <sensor type="ray" name="head_hokuyo_sensor">
       <pose>0 0 0 0 0 0</pose>
-      <visualize>false</visualize>
+      <visualize>true</visualize>
       <update_rate>40</update_rate>
       <ray>
         <scan>
           <horizontal>
-            <samples>540</samples>
+            <samples>720</samples>
             <resolution>1</resolution>
-            <min_angle>-2.35619449</min_angle>
-            <max_angle>2.35619449</max_angle>
+            <min_angle>-1.57</min_angle>
+            <max_angle>1.57</max_angle>
           </horizontal>
         </scan>
         <range>

@@ -229,3 +229,7 @@ target_link_libraries(pcl_converter ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 target_link_libraries(pcl_converter  ${catkin_LIBRARIES})
 target_link_libraries(global_planner ${catkin_LIBRARIES})
+
+add_executable(gp src/gp.cpp)
+target_link_libraries(gp  ${catkin_LIBRARIES})
+

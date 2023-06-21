@@ -136,21 +136,21 @@ private:
 
     void handleCases()
     {
-        if (fleft < (X +0.5) && front > X && fright > X)
+        if (fleft < X  && front > X && fright > X)
         {
             ROS_INFO(" CASE 1 - Front left");
             cmd_vel.linear.x = 0.5;
             cmd_vel.angular.z = -3.0;
             cmd_vel_pub.publish(cmd_vel);
         }
-        else if (fleft > X && front < (X + 0.5 ) && fright > X)
+        else if (fleft > X && front < X  && fright > X)
         {
             ROS_INFO(" CASE 2 - Front");
             cmd_vel.linear.x = 1.0;
             cmd_vel.angular.z = -2.0;
             cmd_vel_pub.publish(cmd_vel);
         }
-        else if (fleft > X && front > X && fright < (X +0.5 ))
+        else if (fleft > X && front > X && fright < X)
         {
             ROS_INFO(" CASE 3 - Front Right");
             cmd_vel.linear.x = 0.5;

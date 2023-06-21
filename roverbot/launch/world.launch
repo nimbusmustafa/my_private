@@ -45,7 +45,7 @@
 		
 	
 
-  <!--<node pkg="roverbot" type="pcl_converter" name="pcl_converter" output="screen"> launch-prefix="gnome-terminal -/-command" ></node> -->
+  <!--node pkg="roverbot" type="pcl_converter" name="pcl_converter" output="screen"> launch-prefix="gnome-terminal -/-command" ></node>  -->
   
  <node pkg="pointcloud_to_laserscan" type="pointcloud_to_laserscan_node" name="pointcloud_to_laserscan">
       <remap from="cloud_in" to="/kinect/depth/points"/>
@@ -70,7 +70,7 @@
         # 2: inf : Parallelism level
         concurrency_level: 1
       </rosparam>
-    </node>
+    </node> 
 	
 
 </launch>
