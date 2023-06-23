@@ -31,7 +31,7 @@ private:
     float current_target;
     float num_of_samples;
     float distance;
-    float X=2.0;
+    float X=1.0;
     geometry_msgs::Twist cmd_vel;
 
     void imucallback(const sensor_msgs::Imu::ConstPtr &msg)
@@ -229,7 +229,7 @@ public:
             ROS_INFO("left=%f", left);
 
 
-            if (distance > 1)
+            if (distance > 0.5)
             {
                 if (front < X || fright < X || fleft < X)
                 {
@@ -243,11 +243,11 @@ public:
                 }*/
                 else if((front>X || fright >X || fleft > X || left>X ) && right < X){
                     cmd_vel.linear.x=0.0;
-                    cmd_vel.angular.x=2.0;
+                    cmd_vel.angular.z=2.0;
                 }
                 else if((front>X || fright >X || fleft > X || right > X) && left<X ){
                     cmd_vel.linear.x=0.0;
-                    cmd_vel.angular.x=-2.0;
+                    cmd_vel.angular.z=-2.0;
                 }
                 else
                 {

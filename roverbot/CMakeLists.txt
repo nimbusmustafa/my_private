@@ -223,12 +223,23 @@ add_executable(global_planner src/global_planner.cpp)
 
 ## Link the executable with catkin libraries and PCL libraries
 target_link_libraries(pcl_converter ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+target_link_libraries(global_planner
+  pcl_common
+  pcl_io
+  pcl_filters
+  # Add other required PCL libraries here
+)
+find_package(PCL 1.10.0 REQUIRED)
 
+include_directories(${PCL_INCLUDE_DIRS})
+link_directories(${PCL_LIBRARY_DIRS})
+add_definitions(${PCL_DEFINITIONS})
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
 target_link_libraries(pcl_converter  ${catkin_LIBRARIES})
 target_link_libraries(global_planner ${catkin_LIBRARIES})
+target_link_libraries(global_planner ${PCL_LIBRARIES})
 
 add_executable(gp src/gp.cpp)
 target_link_libraries(gp  ${catkin_LIBRARIES})

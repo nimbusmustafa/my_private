@@ -6,6 +6,29 @@
 #include <sensor_msgs/NavSatFix.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/LaserScan.h>
+#include <sensor_msgs/PointCloud2.h>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+#include <pcl_conversions/pcl_conversions.h>
+#include <pcl_conversions/pcl_conversions.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl/ModelCoefficients.h>
+#include <pcl/sample_consensus/model_types.h>
+#include <pcl/sample_consensus/method_types.h>
+#include <pcl/sample_consensus/ransac.h>
+#include <pcl/sample_consensus/sac_model_plane.h>
+#include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/segmentation/extract_clusters.h>
+#include <pcl/filters/extract_indices.h>
+#include <pcl/filters/passthrough.h>
+#include <pcl/filters/voxel_grid.h>
+#include <pcl/features/normal_3d.h>
+#include <algorithm>
+#include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/segmentation/region_growing_rgb.h>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+#include <pcl/filters/statistical_outlier_removal.h>
 
 class navigation
 {
@@ -13,6 +36,8 @@ private:
     ros::Subscriber gps_sub;
     ros::Subscriber imu_sub;
     ros::Subscriber lidar_sub;
+   // ros::Subscriber point_cloud_sub;
+   // ros::Publisher filtered_cloud_pub;
     ros::Publisher cmd_vel_pub;
 
     float current_latitude;
@@ -31,7 +56,7 @@ private:
     float current_target;
     float num_of_samples;
     float distance;
-    float X=2.0;
+    float X = 2.0;
     geometry_msgs::Twist cmd_vel;
 
     void imucallback(const sensor_msgs::Imu::ConstPtr &msg)
@@ -61,6 +86,7 @@ private:
         left = std::min(*std::min_element(msg->ranges.begin() + 289, msg->ranges.begin() + 362), 10.0f);
     }
 
+
     float distancefn(float target_latitude, float target_longitude)
     {
         int R = 6371e3;
@@ -77,8 +103,8 @@ private:
     float targetfn(float target_latitude, float target_longitude, float currentlatitude, float currentlongitude)
     {
         int R = 6371e3;
-        float phi1 = (currentlatitude) * M_PI / 180;
-        float phi2 = (target_latitude) * M_PI / 180;
+        float phi1 = (currentlatitude)*M_PI / 180;
+        float phi2 = (target_latitude)*M_PI / 180;
         float dphi = (target_latitude - currentlatitude) * M_PI / 180;
         float dlambda = (target_longitude - currentlongitude) * M_PI / 180;
         float y = std::sin(dlambda) * std::cos(phi2);
@@ -129,28 +155,28 @@ private:
         {
             cmd_vel.angular.z = 0;
             cmd_vel_pub.publish(cmd_vel);
-            //ROS_INFO("GO STRAIGHT");
+            // ROS_INFO("GO STRAIGHT");
             goStraight();
         }
     }
 
     void handleCases()
     {
-        if (fleft < (X +0.5) && front > X && fright > X)
+        if (fleft < (X + 0.5) && front > X && fright > X)
         {
             ROS_INFO(" CASE 1 - Front left");
             cmd_vel.linear.x = 0.5;
             cmd_vel.angular.z = -3.0;
             cmd_vel_pub.publish(cmd_vel);
         }
-        else if (fleft > X && front < (X + 0.5 ) && fright > X)
+        else if (fleft > X && front < (X + 0.5) && fright > X)
         {
             ROS_INFO(" CASE 2 - Front");
             cmd_vel.linear.x = 1.0;
             cmd_vel.angular.z = -2.0;
             cmd_vel_pub.publish(cmd_vel);
         }
-        else if (fleft > X && front > X && fright < (X +0.5 ))
+        else if (fleft > X && front > X && fright < (X + 0.5))
         {
             ROS_INFO(" CASE 3 - Front Right");
             cmd_vel.linear.x = 0.5;
@@ -198,10 +224,13 @@ public:
     void run()
     {
         ros::NodeHandle nh;
-         gps_sub = nh.subscribe("/gps/fix", 100, &navigation::gpsCallback, this);
-         imu_sub = nh.subscribe("/imu", 100, &navigation::imucallback, this);
-         lidar_sub = nh.subscribe("/laser_scan", 100, &navigation::laserCallback, this);
-         cmd_vel_pub = nh.advertise<geometry_msgs::Twist>("/roverbot/cmd_vel", 100);
+        gps_sub = nh.subscribe("/gps/fix", 100, &navigation::gpsCallback, this);
+        imu_sub = nh.subscribe("/imu", 100, &navigation::imucallback, this);
+        lidar_sub = nh.subscribe("/laser_scan", 100, &navigation::laserCallback, this);
+       // point_cloud_sub = nh.subscribe("/kinect/depth/pointds", 1000, &navigation::pointCloudCallback, this);
+        //filtered_cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("/filtered_cloud", 1000);
+
+        cmd_vel_pub = nh.advertise<geometry_msgs::Twist>("/roverbot/cmd_vel", 100);
         ros::Rate rate(10.0);
 
         ROS_INFO("Enter Latitude: ");
@@ -218,16 +247,15 @@ public:
             {
                 current_target -= 2 * M_PI;
             }
-            ROS_INFO("distance=%f",distance);
+            ROS_INFO("distance=%f", distance);
             ROS_INFO("current angle: %f  target angle: %f", yaw, current_target);
             ROS_INFO("angle diff=%f", current_target - yaw);
-            //ROS_INFO("no of samples =%f", num_of_samples);
+            // ROS_INFO("no of samples =%f", num_of_samples);
             ROS_INFO("fright= %f", fright);
             ROS_INFO("fleft= %f", fleft);
             ROS_INFO("front= %f", front);
             ROS_INFO("right=%f", right);
             ROS_INFO("left=%f", left);
-
 
             if (distance > 1)
             {
@@ -241,13 +269,15 @@ public:
                     cmd_vel.angular.z = 0;
                     cmd_vel_pub.publish(cmd_vel);
                 }*/
-                else if((front>X || fright >X || fleft > X || left>X ) && right < X){
-                    cmd_vel.linear.x=0.0;
-                    cmd_vel.angular.x=2.0;
+                else if ((front > X || fright > X || fleft > X || left > X) && right < X)
+                {
+                    cmd_vel.linear.x = 0.0;
+                    cmd_vel.angular.x = 2.0;
                 }
-                else if((front>X || fright >X || fleft > X || right > X) && left<X ){
-                    cmd_vel.linear.x=0.0;
-                    cmd_vel.angular.x=-2.0;
+                else if ((front > X || fright > X || fleft > X || right > X) && left < X)
+                {
+                    cmd_vel.linear.x = 0.0;
+                    cmd_vel.angular.x = -2.0;
                 }
                 else
                 {

@@ -45,10 +45,10 @@
 		
 	
 
-  <!--node pkg="roverbot" type="pcl_converter" name="pcl_converter" output="screen"> launch-prefix="gnome-terminal -/-command" ></node>  -->
+  <node pkg="roverbot" type="pcl_converter" name="pcl_converter" output="screen"> launch-prefix="gnome-terminal --command" ></node>  
   
  <node pkg="pointcloud_to_laserscan" type="pointcloud_to_laserscan_node" name="pointcloud_to_laserscan">
-      <remap from="cloud_in" to="/kinect/depth/points"/>
+      <remap from="cloud_in" to="/filtered_cloud"/>
       <remap from="scan" to="/laser_scan" />
       <rosparam>
         target_frame: kinect_link

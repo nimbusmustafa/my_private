@@ -28,62 +28,50 @@
 
 class PCLConverter {
 public:
-  PCLConverter(ros::NodeHandle& nh) : nh_(nh) {
-    laser_scan_pub_ = nh_.advertise<sensor_msgs::LaserScan>("/laser_scan", 10);
-    point_cloud_subscriber_ = nh_.subscribe("/kinect/depth/points", 10, &PCLConverter::pointCloudCallback, this);
+  PCLConverter(ros::NodeHandle& nh) : nh(nh) {
+    filtered_cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("/filtered_cloud", 1000);
+    point_cloud_subscriber = nh.subscribe("/kinect/depth/points", 10, &PCLConverter::pointCloudCallback, this);
   }
 
-  void pointCloudCallback(const sensor_msgs::PointCloud2::ConstPtr& cloud_msg) {
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
-    pcl::fromROSMsg(*cloud_msg, *cloud);
-    pcl::VoxelGrid<pcl::PointXYZRGB> vox;
-    vox.setInputCloud(cloud);
-    vox.setLeafSize(0.8, 0.8, 0.8);
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr filtered_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
-    vox.filter(*filtered_cloud);
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr ground_removed_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
-    pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients());
-    pcl::PointIndices::Ptr inliers(new pcl::PointIndices());
+  void pointCloudCallback(const sensor_msgs::PointCloud2::ConstPtr &msg)
+    {
+        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
+        pcl::fromROSMsg(*msg, *cloud);
 
-    pcl::SACSegmentation<pcl::PointXYZRGB> seg;
-    seg.setModelType(pcl::SACMODEL_PLANE);
-    seg.setMethodType(pcl::SAC_RANSAC);
-    seg.setDistanceThreshold(0.01);
-    seg.setInputCloud(filtered_cloud);
-    seg.segment(*inliers, *coefficients);
-    pcl::ExtractIndices<pcl::PointXYZRGB> extract;
-    extract.setInputCloud(filtered_cloud);
-    extract.setIndices(inliers);
-    extract.setNegative(true);
-    extract.filter(*ground_removed_cloud);
-    sensor_msgs::LaserScan laser_scan_msg;
-    laser_scan_msg.header = cloud_msg->header;
-    laser_scan_msg.header.frame_id = "dummy_frame";
-    laser_scan_msg.angle_min = -1.57;
-    laser_scan_msg.angle_max = 1.57;
-    laser_scan_msg.angle_increment = 0.00872664619237;
-    laser_scan_msg.time_increment = 0.0;
-    laser_scan_msg.scan_time = 0.0333333333333;
-    laser_scan_msg.range_min = 0.45;
-    laser_scan_msg.range_max = 4.0;
-    laser_scan_msg.ranges.resize(ground_removed_cloud->width);
+        pcl::PointCloud<pcl::PointXYZ>::Ptr filtered_cloud(new pcl::PointCloud<pcl::PointXYZ>);
+        pcl::VoxelGrid<pcl::PointXYZ> voxel_grid;
+        voxel_grid.setInputCloud(cloud);
+        voxel_grid.setLeafSize(0.1, 0.1, 0.1); 
+        voxel_grid.filter(*filtered_cloud);
 
-    for (size_t i = 0; i < ground_removed_cloud->width; ++i) {
-      const pcl::PointXYZRGB &point = ground_removed_cloud->points[i];
-      if (std::isnan(point.x) || std::isnan(point.y) || std::isnan(point.z)) {
-        laser_scan_msg.ranges[i] = std::numeric_limits<float>::infinity();
-      } else {
-        laser_scan_msg.ranges[i] = sqrt(pow(point.x, 2) + pow(point.y, 2) + pow(point.z, 2));
-      }
+        pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
+        pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
+        pcl::SACSegmentation<pcl::PointXYZ> seg;
+        seg.setOptimizeCoefficients(true);
+        seg.setModelType(pcl::SACMODEL_PLANE);
+        seg.setMethodType(pcl::SAC_RANSAC);
+        seg.setDistanceThreshold(0.1); 
+        seg.setInputCloud(filtered_cloud);
+        seg.segment(*inliers, *coefficients);
+
+        pcl::PointCloud<pcl::PointXYZ>::Ptr ground_plane(new pcl::PointCloud<pcl::PointXYZ>);
+        pcl::ExtractIndices<pcl::PointXYZ> extract;
+        extract.setInputCloud(filtered_cloud);
+        extract.setIndices(inliers);
+        extract.setNegative(false);
+        extract.filter(*ground_plane);
+
+        sensor_msgs::PointCloud2 filtered_cloud_msg;
+        pcl::toROSMsg(*filtered_cloud, filtered_cloud_msg);
+        filtered_cloud_msg.header = msg->header;
+        filtered_cloud_pub.publish(filtered_cloud_msg);
     }
 
-    laser_scan_pub_.publish(laser_scan_msg);
-  }
 
 private:
-  ros::NodeHandle nh_;
-  ros::Publisher laser_scan_pub_;
-  ros::Subscriber point_cloud_subscriber_;
+  ros::NodeHandle nh;
+  ros::Publisher filtered_cloud_pub;
+  ros::Subscriber point_cloud_subscriber;
 };
 
 int main(int argc, char** argv) {
