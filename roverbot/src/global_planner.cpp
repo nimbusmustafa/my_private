@@ -36,8 +36,7 @@ private:
     ros::Subscriber gps_sub;
     ros::Subscriber imu_sub;
     ros::Subscriber lidar_sub;
-   // ros::Subscriber point_cloud_sub;
-   // ros::Publisher filtered_cloud_pub;
+  
     ros::Publisher cmd_vel_pub;
 
     float current_latitude;
@@ -227,9 +226,7 @@ public:
         gps_sub = nh.subscribe("/gps/fix", 100, &navigation::gpsCallback, this);
         imu_sub = nh.subscribe("/imu", 100, &navigation::imucallback, this);
         lidar_sub = nh.subscribe("/laser_scan", 100, &navigation::laserCallback, this);
-       // point_cloud_sub = nh.subscribe("/kinect/depth/pointds", 1000, &navigation::pointCloudCallback, this);
-        //filtered_cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("/filtered_cloud", 1000);
-
+       
         cmd_vel_pub = nh.advertise<geometry_msgs::Twist>("/roverbot/cmd_vel", 100);
         ros::Rate rate(10.0);
 
